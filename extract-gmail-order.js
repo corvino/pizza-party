@@ -10,6 +10,6 @@ if (3 !== process.argv.length) {
 const filepath = process.argv[2];
 
 (async () => {
-  const body = await pizza.readMessageBody(filepath);
+  const { body } = await pizza.readMessageBody(filepath);
   console.log(body);
 })();

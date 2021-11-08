@@ -7,7 +7,7 @@ const Papa = require("papaparse");
 
 const pizza = require("./lib/pizza");
 
-const { classMapping, emailFixes, transactionFixes } = require("./data/config.js");
+const { additionalOrders, classMapping, emailFixes, splitOrders, transactionFixes } = require("./data/config.js");
 
 const messagesPath = "messages";
 
@@ -24,10 +24,10 @@ function normalizePizzaType(type) {
   const orders = [];
   const messages = await fs.promises.readdir(messagesPath);
   for await (message of messages) {
-    const body = await pizza.readMessageBody(path.join(messagesPath, message));
+    const { id, body } = await pizza.readMessageBody(path.join(messagesPath, message));
     try {
       const order = pizza.extractOrderFromBody(body);
-      orders.push(order);
+      orders.push({ ...order, gmailId: id });
     } catch (error) {
       fs.promises.writeFile(path.join("exceptions", message), body);
       console.log(error);
@@ -35,21 +35,37 @@ function normalizePizzaType(type) {
     // console.log(JSON.stringify(order, null, 4));
   }
 
-  const fixed = orders.map((order) => {
+  const collator = new Intl.Collator();
+  const tweakedOrders = orders.map((order) => {
     if (order.transactionId in transactionFixes) {
       return { ...order, ...transactionFixes[order.transactionId]};
     } else if (order.email in emailFixes) {
       return { ...order, ...emailFixes[order.email]}
     }
     return order;
-  }).map((order) => {
+  });
+  // console.log(JSON.stringify(splitOrders, null, 4));
+  const ordersWithSplits = tweakedOrders.flatMap((order) => {
+    if (order.transactionId in splitOrders) {
+      return splitOrders[order.transactionId]
+    } else {
+      return [order];
+    }
+  });
+
+  const fixed = ordersWithSplits.concat(additionalOrders).map((order) => {
     return { Name: order.studentName, Class: classMapping[order.gradeAndTeacher], Type: normalizePizzaType(order.pizzaType), Number: order.quantity }
   }).sort((a,b) => {
+    // console.log(`(${a.Name}, ${b.Name}) - (${a.Class}, ${b.Class}) - (${classOrder[a.Class]}, ${classOrder[b.Class]}) = ${retval}`);
+
     const classDifference = classOrder[a.Class] - classOrder[b.Class];
     if (!classDifference) {
-      return new Intl.Collator().compare(a.Name, b.Name);
+      const nameComparison = collator.compare(a.Name, b.Name);
+      if (!nameComparison) {
+        return collator.compare(a.Type, b.Type);
+      }
+      return nameComparison;
     }
-    // console.log(`(${a.Name}, ${b.Name}) - (${a.Class}, ${b.Class}) - (${classOrder[a.Class]}, ${classOrder[b.Class]}) = ${retval}`);
     return classDifference;
   }).reduce((a, b) => {
     if (0 < a.length) {
