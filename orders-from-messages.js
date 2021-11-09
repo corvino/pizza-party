@@ -32,10 +32,10 @@ function normalizePizzaType(type) {
       fs.promises.writeFile(path.join("exceptions", message), body);
       console.log(error);
     }
-    // console.log(JSON.stringify(order, null, 4));
   }
 
   const collator = new Intl.Collator();
+
   const tweakedOrders = orders.map((order) => {
     if (order.transactionId in transactionFixes) {
       return { ...order, ...transactionFixes[order.transactionId]};
@@ -44,7 +44,7 @@ function normalizePizzaType(type) {
     }
     return order;
   });
-  // console.log(JSON.stringify(splitOrders, null, 4));
+
   const ordersWithSplits = tweakedOrders.flatMap((order) => {
     if (order.transactionId in splitOrders) {
       return splitOrders[order.transactionId]
@@ -53,11 +53,18 @@ function normalizePizzaType(type) {
     }
   });
 
-  const fixed = ordersWithSplits.concat(additionalOrders).map((order) => {
-    return { Name: order.studentName, Class: classMapping[order.gradeAndTeacher], Type: normalizePizzaType(order.pizzaType), Number: order.quantity }
-  }).sort((a,b) => {
-    // console.log(`(${a.Name}, ${b.Name}) - (${a.Class}, ${b.Class}) - (${classOrder[a.Class]}, ${classOrder[b.Class]}) = ${retval}`);
+  const expandedOrders = ordersWithSplits.flatMap(order => {
+    return order.items.map(item => {
+      const { items, ...newOrder } = { ...order, pizzaType: item.type, quantity: item.quantity };
+      return newOrder;
+    });
+  });
 
+  const remappedOrders = expandedOrders.concat(additionalOrders).map((order) => {
+    return { Name: order.studentName, Class: classMapping[order.gradeAndTeacher], Type: normalizePizzaType(order.pizzaType), Number: order.quantity }
+  })
+
+  const sortedOrders = remappedOrders.sort((a,b) => {
     const classDifference = classOrder[a.Class] - classOrder[b.Class];
     if (!classDifference) {
       const nameComparison = collator.compare(a.Name, b.Name);
@@ -77,7 +84,6 @@ function normalizePizzaType(type) {
     }
     return a.concat(b);
   }, []);
-//  const output = orders.map((order) => order.gradeAndTeacher);
 
-  console.log(Papa.unparse(fixed));
+  console.log(Papa.unparse(sortedOrders));
 })();

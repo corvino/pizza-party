@@ -4,4 +4,5 @@ data
 
 export
 exceptions
+message-bodies
 messages

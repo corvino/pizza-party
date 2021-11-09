@@ -11,5 +11,7 @@ const filepath = process.argv[2];
 
 (async () => {
   const { body } = await pizza.readMessageBody(filepath);
-  console.log(body);
+  const order = pizza.extractOrderFromBody(body);
+
+  console.log(expandedOrders);
 })();
