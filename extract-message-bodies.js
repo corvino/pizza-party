@@ -11,6 +11,6 @@ const bodyPath = "message-bodies";
   const messages = await fs.promises.readdir(messagesPath);
   for await (message of messages) {
     const { id, body } = await pizza.readMessageBody(path.join(messagesPath, message));
-    await fs.promises.writeFile(path.join(bodyPath, `${message}.html`), body);
+    await fs.promises.writeFile(path.join(bodyPath, `${id}.html`), body);
   }
 })();
