@@ -1,11 +1,11 @@
 #! /usr/bin/env node
 
-const Papa = require("papaparse");
+const fs = require("fs");
 
+const Papa = require("papaparse");
 const { google } = require("googleapis");
 
 const gauth = require("./lib/gauth");
-
 const config = require("./data/config");
 
 const lowerSchoolGrades = [
@@ -35,18 +35,17 @@ function hasAPrefix(str, prefixes) {
 }
 
 function orderData(sheetsData) {
-  return sheetsData.valueRanges.map((sheet) => {
+  return sheetsData.valueRanges.flatMap((sheet) => {
     const values = sheet.values;
     const teacher = values[0][0];
 
     // Row 11 is the first row of student data
-    return values.slice(10).map((row) => [row[0], teacher, row[1], row[2]]);
-  }).flat();
+    return values.slice(10).map((row) => { return { Name: row[0], "Class": teacher, Type: row[1], Number: row[2] } });
+  });
 }
 
 function dumpCSV(orderData) {
-  console.log("Name,Class,Type,Number");
-  console.log(Papa.unparse(orderData));
+
 }
 
 (async () => {
@@ -65,17 +64,5 @@ function dumpCSV(orderData) {
     ranges: classNames
   });
 
-  dumpCSV(orderData(values.data));
-
-  // console.log(`The title of the documents is: ${sheet.data.properties.title}`);
-
-  // console.log(`sheet names: ${JSON.stringify(sheetNames, null, 4)}`);
-  // console.log(`class names: ${JSON.stringify(classNames, null, 4)}`);
-  // console.log(`lower school names: ${JSON.stringify(lowerSchoolNames, null, 4)}`);
-
-  // console.log(`${JSON.stringify(sheet.data, null, 4)}`);
-
-  // console.log(JSON.stringify(values.data, null, 4));
-
-  //console.log(JSON.stringify(csv, null, 4));
+  await fs.promises.writeFile("data/orders-spreadsheet.csv", Papa.unparse(values.data));
 })();

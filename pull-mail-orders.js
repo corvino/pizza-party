@@ -23,7 +23,7 @@ const gauth = require("./lib/gauth");
     } catch(error) {
       console.log(`fetcing ${message.id}`);
       const email = await gmail.users.messages.get({ userId: "me", id: message.id });
-      fs.promises.writeFile(filename, JSON.stringify(email.data, null, 4));
+      await fs.promises.writeFile(filename, JSON.stringify(email.data, null, 4));
     }
   }
 })();

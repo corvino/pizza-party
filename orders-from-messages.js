@@ -100,5 +100,5 @@ function normalizePizzaType(type) {
     return a.concat(b);
   }, []);
 
-  console.log(Papa.unparse(compactedOrders));
+  await fs.promises.writeFile("data/orders-email.csv", Papa.unparse(compactedOrders));
 })();
