@@ -1,8 +1,11 @@
 node_modules
 
+design/ClassName*
+
 data
 
 export
 exceptions
 message-bodies
 messages
+order-sheets
