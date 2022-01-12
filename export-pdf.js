@@ -9,6 +9,8 @@ const { google } = require("googleapis");
 const gauth = require("./lib/gauth");
 const config = require("./data/config");
 
+const EXPORT_PATH="export";
+
 function sleep(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -46,7 +48,7 @@ async function exportTab(token, sheetId, tab) {
 async function exportTabToFile(token, sheetId, tab) {
   const data = await exportTab(token, sheetId, tab);
 
-  const filepath = path.join("export/", `${tab.title}.pdf`);
+  const filepath = path.join(EXPORT_PATH, `${tab.title}.pdf`);
   console.log(`${tab.title} exported to ${filepath}`);
   await fs.promises.writeFile(filepath, Buffer.from(data), "binary");
 }
@@ -78,6 +80,8 @@ async function doWithRetries(task, waits) {
     const printed = tabs.filter(t => config.printedTabs.includes(t.title));
 
     const accessToken = await auth.getAccessToken();
+
+    await fs.promises.mkdir(EXPORT_PATH, { recursive: true });
 
     for (tab of printed) {
         await doWithRetries(async () => { await exportTabToFile(accessToken.token, config.sheetId, tab) }, [4, 10, 30, 60]);
